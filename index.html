@@ -60,6 +60,10 @@
    <img class="hidden frame" src="./svg/11 Mickey.svg"/>
    <img class="hidden frame" src="./svg/12 Mickey.svg"/>
    <button>play</button>
+   <div>
+	   <div>
+   </div>
+   </div>
   </body>
   <script>
 	 const toggleSvg = (i) => document.querySelector(`svg:nth-child(${i})`)
@@ -95,9 +99,16 @@
 
      document.body.appendChild(script)
    })
+
+
+	  const yesOrNo = () => Math.random() > 0.25;
+	  const octaveUp = noteName => noteName.replace(/\d/, "2")
+
    async function playSteamboatMidi () {
      const midi = await new Midi.fromUrl("steamboat_willie.mid")
+
      const now = Tone.now() + 0.5;
+
      midi.tracks.forEach((track) => {
        //create a synth for each track
        const synth = new Tone.PolySynth(Tone.Synth, {
@@ -109,17 +120,55 @@
          },
        }).toDestination();
        // synths.push(synth);
+       const synth2 = new Tone.PolySynth(Tone.Synth, {
+         envelope: {
+           attack: 0.02,
+           decay: 0.1,
+           sustain: 0.3,
+           release: 1,
+         },
+       }).toDestination();
        //schedule all of the events
+		       const feedbackDelay = new Tone.FeedbackDelay("8n", 0.0).toDestination();
+
+       synth.connect(feedbackDelay)
+	const cheby = new Tone.Chebyshev(51).toDestination();
+       synth2.connect(cheby)
+Tone.Transport.scheduleRepeat((time) => {
+	// use the callback time to schedule events
+	synth.start(time).stop(time + 0.1);
+}, "8n");
+// transport must be started before it starts invoking events
+Tone.Transport.start();
+		       console.log(track.notes)
        track.notes.forEach((note) => {
-         synth.triggerAttackRelease(
-           note.name,
-           note.duration,
-           note.time + now,
-           note.velocity
-         );
+			 
+	 const duration = yesOrNo() ? note.duration * 3 : note.duration;
+	 const name = yesOrNo() ? note.name :  octaveUp(note.name);
+
+			 if (note.ticks > 50000 ) {
+					   console.log("basdkfjha")
+					   feedbackDelay.set("4n", 0.75)
+				   }
+	 if (yesOrNo()) {
+		 synth.triggerAttackRelease(
+		   name,
+		   duration || 0.01,
+		   note.time + now,
+		   note.velocity
+		 );
+	   } else {
+		 synth2.triggerAttackRelease(
+		   name,
+		   duration || 0.01,
+		   note.time + now,
+		   note.velocity
+		 );
+	     }
        });
      });
    }
+		   
   </script>
 </html>
 
